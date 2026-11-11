@@ -56,8 +56,8 @@ Required: concrete names (modules, classes, endpoints, tables, teams), numbers w
 3. **Outline and diagrams first.** Show the outline, a sequence diagram, and a flow diagram of the main scenario. For architecture documents also show the system context diagram. **Stop and wait for the user's confirmation** before writing the full document or any code, including the build script.
 4. **Write** `docs/<kebab-name>.md`.
 5. **Build** HTML with the generator. Reuse the repo's script if present; otherwise write `scripts/build_docs.py` once.
-6. **Expert review pass**, then the quality gate.
-7. **Report**: file paths, three-line summary, docs-versus-code discrepancies, remaining assumptions, open questions. Do not recap the steps.
+6. **Expert review pass**, then the quality gate, then **grading** (see Grading).
+7. **Report**: file paths, the grade table, docs-versus-code discrepancies, remaining assumptions, open questions. Do not recap the steps.
 
 ## Document structure
 
@@ -161,6 +161,56 @@ Re-read once through each lens and fix what you find. For high-stakes documents,
 - **Product and business reader**: can a non-engineer find the problem, benefit, cost, and decision requested on the first page?
 - **Editor**: apply the filler test to every sentence; check terminology, acronyms, figure and table references.
 
+## Grading
+
+Grade the finished document before reporting it. Grading has two stages, run in order.
+
+### Stage 1: mechanical checks (hard fails)
+
+Run the bundled checker from this skill's directory. It is standard library only and works offline:
+
+```
+python3 -I <skill-dir>/scripts/check_doc.py docs/<name>.md --html dist/<name>.html --repo <source-root>
+```
+
+It checks front matter, banned phrases, placeholder text, empty sections, that every `file:line` citation exists and is in range, that captioned code excerpts match the source line for line, that diagrams use the supported subset and carry numbered captions that the text references, that requirement IDs are used more than once, that claims are tagged, and that the HTML has no external references.
+
+Any `FAIL` line is a hard fail. Fix it and rerun until the exit status is 0. A document with a hard fail is graded FAIL no matter how well it scores below. Do not edit the checker or its banned list to make a document pass. If the checker is wrong, say so in the report and fix the checker separately.
+
+### Stage 2: scored review
+
+Score each area 0 to 5 with one line of evidence (a quote, a line number, or a figure number). Use the anchors: 1 = largely missing or wrong, 3 = adequate with visible gaps, 5 = nothing a careful reviewer would change. Do not give a 5 without evidence.
+
+| Area | What a 5 looks like |
+|---|---|
+| Evidence and citations | Every behavior claim is tagged and cited; discrepancies between docs and code are recorded; no claim rests on a name or comment |
+| Writing quality | No filler; every sentence is specific to this system; numbers carry units and a source or an Assumption tag |
+| Diagram accuracy | Each box and edge matches the code; edges labeled; captions and walkthroughs add information |
+| Code snippets | Existing code is verbatim and minimal; proposed code is labeled and uses real APIs; each snippet has a purpose sentence |
+| Completeness for the type | All sections that matter for this document type exist and none are padding; alternatives are fair |
+| Decision usefulness | A reader can decide from the first page; the ask, cost, risk, and open questions are explicit |
+| Security and operations | Trust boundaries, data handling, failure modes, observability, rollout, and rollback are addressed where relevant |
+| HTML output | Offline, accessible, readable in light, dark, narrow, and print; diagrams and code render correctly |
+
+Passing grade: average of 4.0 or higher and no area below 3. Otherwise raise the lowest-scoring areas and score again. After two failed rounds, report the document as FAIL with the remaining gaps instead of looping.
+
+When the document is high-stakes, or the user asks for an independent grade, have a separate reviewer score it without seeing your scores. If the two differ by more than one point in any area, resolve the difference by going back to the evidence, not by averaging.
+
+### Report format
+
+End the report with:
+
+```
+Grade: PASS | FAIL
+Mechanical checks: 0 hard failures, N warnings
+| Area | Score | Evidence |
+|---|---|---|
+| ... | ... | ... |
+Average: X.X   Lowest: Y
+```
+
+List warnings you chose not to fix and why.
+
 ## Quality gate (all must pass before reporting done)
 
 - Every behavior claim is tagged; every Verified claim has a path and line you re-opened
@@ -173,6 +223,11 @@ Re-read once through each lens and fix what you find. For high-stakes documents,
 - `grep -E 'https?://' dist/*.html` shows only author-written links; no external `src`, stylesheet `href`, `@import`, or `url()`
 - HTML checked visually in light, dark, narrow width, and print preview
 - Numbers trace to a source or are labeled assumptions
+- `scripts/check_doc.py` exits 0 and the Grading stage 2 result is PASS
+
+## Evals
+
+Regression cases for this skill live in `evals/` (fixture app with deliberate traps, a golden document, a flawed document, and `evals.json`). Run `python3 -I scripts/test_check_doc.py` and the cases in `evals/README.md` after any change to this file or to `scripts/`.
 
 ## Defaults
 
