@@ -238,6 +238,14 @@ def check_requirements(text, rep):
             rep.hard("traceability", f"{rid} is defined but never referenced again.")
 
 
+def check_documented_recall(prose, rep):
+    """A claim tagged Documented must not be one recalled from memory."""
+    for no, line in prose:
+        if re.search(r"\bDocumented\b", line) and re.search(
+                r"recalled|from memory|not re-?checked|unverified recall", line, re.I):
+            rep.hard("evidence", "Claim tagged Documented but described as recalled or unchecked; tag it Assumption.", f"line {no}")
+
+
 def check_tags(text, repo, rep):
     verified = len(re.findall(r"\*\*Verified\*\*|\bVerified\b", text))
     documented = len(re.findall(r"\bDocumented\b", text))
@@ -291,6 +299,7 @@ def run(doc, html, repo):
     check_snippets(blocks, repo, rep)
     check_mermaid(blocks, body, rep)
     check_requirements(body, rep)
+    check_documented_recall(prose, rep)
     check_tags(body, repo, rep)
     if html:
         check_html(html, rep)
