@@ -57,7 +57,7 @@ Do not invent inputs. Traffic, user counts, latency, cost, effort, and quotas th
 2. **Investigate.** Read the code the document depends on. Keep a private evidence list (claim, file:line, tag) and an open-questions list.
 3. **Outline and diagrams first.** Show the outline, a sequence diagram, and a flow diagram of the main scenario. For architecture documents also show the system context diagram. **Stop and wait for the user's confirmation** before writing the full document or any code, including the build script.
 4. **Write** `docs/<kebab-name>.md`.
-5. **Build** HTML with the generator. Reuse the repo's script if present; otherwise write `scripts/build_docs.py` once.
+5. **Build** HTML with the generator. Use the repo's own build script if it has one; otherwise run this skill's tested `scripts/build_docs.py` (copy it into the repo's `scripts/` if the user wants it versioned there). Do not write a new generator. Use `--strict` to make renderer warnings fail the build.
 6. **Expert review pass**, then the quality gate, then **grading** (see Grading).
 7. **Report**: file paths, the grade table, docs-versus-code discrepancies, remaining assumptions, open questions. Do not recap the steps.
 
@@ -90,7 +90,7 @@ Variants:
 
 ## Diagrams
 
-Write diagrams as fenced `mermaid` blocks restricted to the subset below. They render natively in GitHub and Bitbucket and in the offline renderer inside the build script. Every diagram has a numbered caption ("Figure 3. Token refresh sequence") and a prose walkthrough that does not just repeat the labels.
+Write diagrams as fenced `mermaid` blocks restricted to the subset below. They render natively in GitHub and Bitbucket and in the offline renderer inside the build script. Every diagram has a numbered caption directly above or below it, written as `*Figure 3. text*`, `**Figure 3.** text`, or a plain `Figure 3. text` line, ("Figure 3. Token refresh sequence") and a prose walkthrough that does not just repeat the labels.
 
 Supported subset:
 - `sequenceDiagram`: `participant`/`actor` with aliases, `->>` and `-->>` messages with text, `Note over A,B: text`.
@@ -141,7 +141,7 @@ Sequence diagram conventions: one scenario per diagram, participants named as in
 
 ## HTML generator requirements
 
-Stdlib only. One command: `python3 -I scripts/build_docs.py docs/foo.md -o dist/foo.html`.
+Stdlib only. One command: `python3 -I scripts/build_docs.py docs/foo.md -o dist/foo.html`. This skill ships that script, tested by `scripts/test_build_docs.py`; the requirements below describe what it does and what any replacement must match.
 
 - Parse the Markdown subset used: front matter, headings, paragraphs, ordered and unordered lists, tables, fenced code, blockquote callouts, inline code, bold, italic, links, horizontal rules. Escape all HTML in content. Fail loudly on unsupported constructs instead of dropping them.
 - Diagrams: built-in renderer converts the mermaid subset to inline SVG (layered layout for flowcharts with nested subgraphs; lifelines and arrows for sequence diagrams). Fail with a clear message on syntax it cannot render.
@@ -230,7 +230,9 @@ List warnings you chose not to fix and why.
 
 ## Evals
 
-Regression cases for this skill live in `evals/` (fixture app with deliberate traps, a golden document, a flawed document, and `evals.json`). Run `python3 -I scripts/test_check_doc.py` and the cases in `evals/README.md` after any change to this file or to `scripts/`.
+Renderer limits to design around: a `subgraph` must hold nodes in neighboring layers, because a boundary spanning a source and a sink far apart would cover other nodes (the builder warns; split the subgraph or reorder). Edge labels that cannot be placed clear of other lines also warn; shorten the label or add a layer. Unsupported diagram types and syntax fail the build rather than rendering wrong.
+
+Regression cases for this skill live in `evals/` (fixture app with deliberate traps, a golden document, a flawed document, and `evals.json`). Run `python3 -I scripts/test_check_doc.py`, `python3 -I scripts/test_build_docs.py` and the cases in `evals/README.md` after any change to this file or to `scripts/`.
 
 ## Defaults
 
