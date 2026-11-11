@@ -109,6 +109,10 @@ class CheckDocTests(unittest.TestCase):
         rep = run_text(text)
         self.assertIn("evidence", codes(rep))
 
+    def test_documented_but_recalled(self):
+        text = golden_text() + "\nThe default quota is 600,000 per minute. Documented, recalled from memory, not re-checked.\n"
+        self.assertIn("evidence", codes(run_text(text)))
+
     def test_html_external_script(self):
         bad = GOOD_HTML.replace("<body>", '<body><script src="https://cdn.example.com/m.js"></script>')
         self.assertIn("html-offline", codes(run_text(golden_text(), bad)))
